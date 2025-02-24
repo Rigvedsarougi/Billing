@@ -10,11 +10,13 @@ Outlet = pd.read_csv('Invoice - Outlet.csv')
 Person = pd.read_csv('Invoice - Person.csv')
 
 # Company Details
-company_name = "ALLGEN TRADING INTERNATIONAL (OPC) PVT LTD"
-company_address = """23B, Mastermind IV, Royal Palms, Aarey Milk colony,
-Goregaon (EAST) Mumbai 400065.
-GSTIN/UIN: 27AASCA7650C1ZJ
-State Name : Mumbai, Code : 400065
+company_name = "BIOLUME SKIN SCIENCE PRIATE LIMITED"
+company_address = """Ground Floor Rampal Awana Complex,
+Rampal Awana Complex, Indra Market,
+Sector-27, Atta,Noida,Gautambuddha Nagar,
+Uttar Pradesh 201301
+GSTIN/UIN: 09AALCB9426H1ZA
+State Name : Uttar Prades, Code : 201301
 """
 company_logo = 'ALLGEN TRADING logo.png'
 photo_logo = 'ALLGEN_TRADING_gpay-removebg-preview.png'
