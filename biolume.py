@@ -19,7 +19,7 @@ GSTIN/UIN: 09AALCB9426H1ZA
 State Name : Uttar Prades, Code : 201301
 """
 company_logo = 'ALLGEN TRADING logo.png'
-photo_logo = 'ALLGEN_TRADING_gpay-removebg-preview.png'
+photo_logo = ' '
 
 bank_details = """
 """
