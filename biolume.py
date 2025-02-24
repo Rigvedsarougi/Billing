@@ -45,24 +45,23 @@ class PDF(FPDF):
         self.cell(0, 10, f'Page {self.page_no()}', align='C')
 
 # Generate Invoice
-def generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discounts):
+def generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category):
     pdf = PDF()
     pdf.alias_nb_pages()
     pdf.add_page()
     current_date = datetime.now().strftime("%d-%m-%Y")
-    
+
     pdf.set_font("Arial", '', 10)
     pdf.cell(100, 10, f"Party: {customer_name}")
     pdf.cell(90, 10, f"Date: {current_date}", ln=True, align='R')
     pdf.cell(100, 10, f"GSTIN/UN: {gst_number}")
     pdf.cell(90, 10, f"Contact: {contact_number}", ln=True, align='R')
-    
+
     pdf.cell(100, 10, "Address: ", ln=True)
     pdf.set_font("Arial", '', 9)
     pdf.multi_cell(0, 10, address)
-    
     pdf.ln(10)
-    
+
     pdf.set_fill_color(200, 220, 255)
     pdf.set_font("Arial", 'B', 9)
     pdf.cell(10, 8, "S.No", border=1, align='C', fill=True)
@@ -71,19 +70,21 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     pdf.cell(20, 8, "GST Rate", border=1, align='C', fill=True)
     pdf.cell(20, 8, "Qty", border=1, align='C', fill=True)
     pdf.cell(20, 8, "Rate", border=1, align='C', fill=True)
-    pdf.cell(20, 8, "Disc. %", border=1, align='C', fill=True)
     pdf.cell(20, 8, "Amount", border=1, align='C', fill=True)
     pdf.ln()
-    
+
     pdf.set_font("Arial", '', 9)
     total_price = 0
     for idx, product in enumerate(selected_products):
         product_data = Products[Products['Product Name'] == product].iloc[0]
         quantity = quantities[idx]
-        unit_price = float(product_data['Price'])
-        discount = discounts[idx]  # Use the provided discount
-        after_disc = unit_price * (1 - discount / 100)  # Calculate discounted price
-        item_total_price = after_disc * quantity
+
+        if discount_category in product_data:
+            unit_price = float(product_data[discount_category])  # Use discount category price
+        else:
+            unit_price = float(product_data['Price'])
+
+        item_total_price = unit_price * quantity
 
         pdf.cell(10, 8, str(idx + 1), border=1)
         pdf.cell(60, 8, product, border=1)
@@ -91,7 +92,6 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
         pdf.cell(20, 8, "18%", border=1, align='C')
         pdf.cell(20, 8, str(quantity), border=1, align='C')
         pdf.cell(20, 8, f"{unit_price:.2f}", border=1, align='R')
-        pdf.cell(20, 8, f"{discount:.1f}%", border=1, align='R')
         pdf.cell(20, 8, f"{item_total_price:.2f}", border=1, align='R')
         total_price += item_total_price
         pdf.ln()
@@ -111,7 +111,7 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     pdf.cell(160, 10, "Grand Total", border=0, align='R')
     pdf.cell(30, 10, f"{grand_total} INR", border=1, align='R')
     pdf.ln(20)
-    
+
     return pdf
 
 # Streamlit UI
@@ -130,12 +130,15 @@ st.subheader("Product Details")
 product_names = Products['Product Name'].tolist()
 selected_products = st.multiselect("Select Products", product_names)
 
-# Fetch Discounted Price
+
 discounted_prices = []
 if selected_products:
     for product in selected_products:
         product_data = Products[Products['Product Name'] == product].iloc[0]
-        discounted_price = product_data[discount_category]
+        if discount_category in product_data:  # Ensure column exists
+            discounted_price = product_data[discount_category]
+        else:
+            discounted_price = product_data['Price']  # Default to normal price
         discounted_prices.append(discounted_price)
 
 # Outlet Selection
@@ -160,15 +163,13 @@ st.write(f"Outlet GST: {outlet_details['GST']}")
 # Generate Invoice button
 if st.button("Generate Invoice"):
     if selected_employee and selected_products and selected_outlet:
-        # Prepare data for invoice
         customer_name = selected_outlet
         gst_number = outlet_details['GST']
         contact_number = outlet_details['Contact']
         address = outlet_details['Address']
         quantities = [1] * len(selected_products)  # Assuming quantity 1 for each product
-        discounts = [0] * len(selected_products)  # Assuming no additional discount
 
-        pdf = generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discounts)
+        pdf = generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category)
         pdf_file = f"invoice_{customer_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
         pdf.output(pdf_file)
         with open(pdf_file, "rb") as f:
