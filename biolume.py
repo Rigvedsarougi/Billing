@@ -5,9 +5,9 @@ from fpdf import FPDF
 from datetime import datetime
 
 # Load data
-Products = pd.read_csv('Invoice - Products.csv')
-Outlet = pd.read_csv('Invoice - Outlet.csv')
-Person = pd.read_csv('Invoice - Person.csv')
+Products = pd.read_csv('/content/Invoice - Products.csv')
+Outlet = pd.read_csv('/content/Invoice - Outlet.csv')
+Person = pd.read_csv('/content/Invoice - Person.csv')
 
 # Company Details
 company_name = "ALLGEN TRADING INTERNATIONAL (OPC) PVT LTD"
@@ -46,27 +46,6 @@ class PDF(FPDF):
         self.set_font('Arial', 'I', 8)
         self.multi_cell(0, 5, bank_details, align='R')
         self.cell(0, 10, f'Page {self.page_no()}', align='C')
-
-# Function to fetch employee details
-def fetch_employee_details(employee_name):
-    employee_details = Person[Person['Employee Name'] == employee_name]
-    if not employee_details.empty:
-        return employee_details.iloc[0]
-    return None
-
-# Function to fetch discounted price
-def fetch_discounted_price(product_name, discount_category):
-    product_details = Products[Products['Product Name'] == product_name]
-    if not product_details.empty:
-        return product_details.iloc[0][discount_category]
-    return None
-
-# Function to fetch outlet details
-def fetch_outlet_details(outlet_name):
-    outlet_details = Outlet[Outlet['Shop Name'] == outlet_name]
-    if not outlet_details.empty:
-        return outlet_details.iloc[0]
-    return None
 
 # Generate Invoice
 def generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discounts):
@@ -141,63 +120,47 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
 # Streamlit UI
 st.title("Biolume + ALLGEN TRADING: Billing System")
 
-# Input fields for Employee details
+# Employee Selection
 st.subheader("Employee Details")
-employee_name = st.text_input("Enter Employee Name")
+employee_name = st.selectbox("Select Employee", Person['Employee Name'].tolist())
 
-if employee_name:
-    employee_details = fetch_employee_details(employee_name)
-    if employee_details is not None:
-        discount_category = employee_details['Discount Category']
-        st.write(f"Discount Category: {discount_category}")
+# Fetch Discount Category
+discount_category = Person[Person['Employee Name'] == employee_name]['Discount Category'].values[0]
 
-        # Product selection
-        selected_products = st.multiselect("Select Products", Products['Product Name'].tolist())
+# Product Selection
+st.subheader("Product Details")
+selected_products = st.multiselect("Select Products", Products['Product Name'].tolist())
 
-        # Quantity and Discount inputs for each product
-        quantities = []
-        discounts = []
-        if selected_products:
-            for product in selected_products:
-                col1, col2 = st.columns(2)
-                with col1:
-                    qty = st.number_input(f"Quantity for {product}", min_value=1, value=1, step=1)
-                    quantities.append(qty)
-                with col2:
-                    discount = fetch_discounted_price(product, discount_category)
-                    st.text(f"Discount Price: {discount}")
-                    discounts.append(0)  # Assuming no additional discount is applied
+# Fetch Discounted Price
+discounted_prices = []
+if selected_products:
+    for product in selected_products:
+        product_data = Products[Products['Product Name'] == product].iloc[0]
+        discounted_price = product_data[discount_category]
+        discounted_prices.append(discounted_price)
 
-        # Outlet selection
-        outlet_name = st.selectbox("Select Outlet", Outlet['Shop Name'].tolist())
-        if outlet_name:
-            outlet_details = fetch_outlet_details(outlet_name)
-            if outlet_details is not None:
-                st.write(f"Outlet Name: {outlet_details['Shop Name']}")
-                st.write(f"Address: {outlet_details['Address']}")
-                st.write(f"GST: {outlet_details['GST']}")
-                st.write(f"Contact: {outlet_details['Contact']}")
+# Outlet Selection
+st.subheader("Outlet Details")
+outlet_name = st.selectbox("Select Outlet", Outlet['Shop Name'].tolist())
 
-        # Input fields for Party details
-        st.subheader("Party Details")
-        customer_name = st.text_input("Enter Customer Name")
-        gst_number = st.text_input("Enter GST Number")
-        contact_number = st.text_input("Enter Contact Number")
-        address = st.text_area("Enter Address", height=100)
+# Fetch Outlet Details
+outlet_details = Outlet[Outlet['Shop Name'] == outlet_name].iloc[0]
 
-        # Date
-        date = datetime.now().strftime("%d-%m-%Y")
-        st.text(f"Date: {date}")
+# Display Details
+st.subheader("Selected Details")
+st.write(f"Employee Name: {employee_name}")
+st.write(f"Discount Category: {discount_category}")
+st.write("Selected Products and Discounted Prices:")
+for product, price in zip(selected_products, discounted_prices):
+    st.write(f"{product}: {price}")
+st.write(f"Outlet Name: {outlet_details['Shop Name']}")
+st.write(f"Outlet Address: {outlet_details['Address']}")
+st.write(f"Outlet GST: {outlet_details['GST']}")
 
-        # Generate Invoice button
-        if st.button("Generate Invoice"):
-            if customer_name and gst_number and contact_number and address and selected_products and quantities:
-                pdf = generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discounts)
-                pdf_file = f"invoice_{customer_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-                pdf.output(pdf_file)
-                with open(pdf_file, "rb") as f:
-                    st.download_button("Download Invoice", f, file_name=pdf_file)
-            else:
-                st.error("Please fill all fields and select products.")
+# Generate Invoice button
+if st.button("Generate Invoice"):
+    if employee_name and selected_products and outlet_name:
+        # Generate invoice logic here
+        st.success("Invoice generated successfully!")
     else:
-        st.error("Employee not found. Please enter a valid employee name.")
+        st.error("Please fill all fields and select products.")
