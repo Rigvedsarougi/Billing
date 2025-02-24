@@ -20,9 +20,6 @@ company_logo = 'ALLGEN TRADING logo.png'
 photo_logo = 'ALLGEN_TRADING_gpay-removebg-preview.png'
 
 bank_details = """
-HDFC Bank, Jogeshwari East Mumbai, Maharashtra: Ac No 50200045580571, IFSC code HDFC0001019 
-Mobile - 9819067929 / GPay / PhonePe 
-Delivery/Payment Support: +918657927412 Customer Support: +919311662808
 """
 
 # Custom PDF class
