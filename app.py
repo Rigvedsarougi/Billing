@@ -63,7 +63,7 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     pdf.ln(1)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(0, 10, f"Sales Person: {employee_name}", ln=True, align='L')
-    pdf.ln(2)
+    pdf.ln(1)
 
     # Customer details
     pdf.set_font("Arial", 'B', 12)
@@ -75,6 +75,7 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     pdf.cell(90, 6, f"Contact: {contact_number}", ln=True, align='R')
     pdf.cell(100, 6, "Address: ", ln=True)
     pdf.multi_cell(0, 6, address)
+    pdf.ln(1)
     
     # Table header
     pdf.set_fill_color(200, 220, 255)
