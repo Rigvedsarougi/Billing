@@ -122,14 +122,16 @@ st.title("Biolume + ALLGEN TRADING: Billing System")
 
 # Employee Selection
 st.subheader("Employee Details")
-employee_name = st.selectbox("Select Employee", Person['Employee Name'].tolist())
+employee_names = Person['Employee Name'].tolist()
+selected_employee = st.selectbox("Select Employee", employee_names)
 
 # Fetch Discount Category
-discount_category = Person[Person['Employee Name'] == employee_name]['Discount Category'].values[0]
+discount_category = Person[Person['Employee Name'] == selected_employee]['Discount Category'].values[0]
 
 # Product Selection
 st.subheader("Product Details")
-selected_products = st.multiselect("Select Products", Products['Product Name'].tolist())
+product_names = Products['Product Name'].tolist()
+selected_products = st.multiselect("Select Products", product_names)
 
 # Fetch Discounted Price
 discounted_prices = []
@@ -141,26 +143,38 @@ if selected_products:
 
 # Outlet Selection
 st.subheader("Outlet Details")
-outlet_name = st.selectbox("Select Outlet", Outlet['Shop Name'].tolist())
+outlet_names = Outlet['Shop Name'].tolist()
+selected_outlet = st.selectbox("Select Outlet", outlet_names)
 
 # Fetch Outlet Details
-outlet_details = Outlet[Outlet['Shop Name'] == outlet_name].iloc[0]
+outlet_details = Outlet[Outlet['Shop Name'] == selected_outlet].iloc[0]
 
 # Display Details
 st.subheader("Selected Details")
-st.write(f"Employee Name: {employee_name}")
+st.write(f"Employee Name: {selected_employee}")
 st.write(f"Discount Category: {discount_category}")
-st.write("Selected Products and Discounted Prices:")
+st.write("Selected Products:")
 for product, price in zip(selected_products, discounted_prices):
-    st.write(f"{product}: {price}")
-st.write(f"Outlet Name: {outlet_details['Shop Name']}")
+    st.write(f"- {product}: {price}")
+st.write(f"Selected Outlet: {selected_outlet}")
 st.write(f"Outlet Address: {outlet_details['Address']}")
 st.write(f"Outlet GST: {outlet_details['GST']}")
 
 # Generate Invoice button
 if st.button("Generate Invoice"):
-    if employee_name and selected_products and outlet_name:
-        # Generate invoice logic here
-        st.success("Invoice generated successfully!")
+    if selected_employee and selected_products and selected_outlet:
+        # Prepare data for invoice
+        customer_name = selected_outlet
+        gst_number = outlet_details['GST']
+        contact_number = outlet_details['Contact']
+        address = outlet_details['Address']
+        quantities = [1] * len(selected_products)  # Assuming quantity 1 for each product
+        discounts = [0] * len(selected_products)  # Assuming no additional discount
+
+        pdf = generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discounts)
+        pdf_file = f"invoice_{customer_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+        pdf.output(pdf_file)
+        with open(pdf_file, "rb") as f:
+            st.download_button("Download Invoice", f, file_name=pdf_file)
     else:
         st.error("Please fill all fields and select products.")
