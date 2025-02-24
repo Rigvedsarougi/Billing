@@ -77,9 +77,8 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
 
     pdf.set_font("Arial", '', 9)
     total_price = 0
-    for idx, product in enumerate(selected_products):
+    for idx, (product, quantity) in enumerate(zip(selected_products, quantities)):
         product_data = Products[Products['Product Name'] == product].iloc[0]
-        quantity = quantities[idx]
 
         if discount_category in product_data:
             unit_price = float(product_data[discount_category])  # Use discount category price
@@ -132,16 +131,12 @@ st.subheader("Product Details")
 product_names = Products['Product Name'].tolist()
 selected_products = st.multiselect("Select Products", product_names)
 
-
-discounted_prices = []
+# Input Quantities for Each Selected Product
+quantities = []
 if selected_products:
     for product in selected_products:
-        product_data = Products[Products['Product Name'] == product].iloc[0]
-        if discount_category in product_data:  # Ensure column exists
-            discounted_price = product_data[discount_category]
-        else:
-            discounted_price = product_data['Price']  # Default to normal price
-        discounted_prices.append(discounted_price)
+        qty = st.number_input(f"Quantity for {product}", min_value=1, value=1, step=1)
+        quantities.append(qty)
 
 # Outlet Selection
 st.subheader("Outlet Details")
@@ -151,17 +146,6 @@ selected_outlet = st.selectbox("Select Outlet", outlet_names)
 # Fetch Outlet Details
 outlet_details = Outlet[Outlet['Shop Name'] == selected_outlet].iloc[0]
 
-# Display Details
-st.subheader("Selected Details")
-st.write(f"Employee Name: {selected_employee}")
-st.write(f"Discount Category: {discount_category}")
-st.write("Selected Products:")
-for product, price in zip(selected_products, discounted_prices):
-    st.write(f"- {product}: {price}")
-st.write(f"Selected Outlet: {selected_outlet}")
-st.write(f"Outlet Address: {outlet_details['Address']}")
-st.write(f"Outlet GST: {outlet_details['GST']}")
-
 # Generate Invoice button
 if st.button("Generate Invoice"):
     if selected_employee and selected_products and selected_outlet:
@@ -169,7 +153,6 @@ if st.button("Generate Invoice"):
         gst_number = outlet_details['GST']
         contact_number = outlet_details['Contact']
         address = outlet_details['Address']
-        quantities = [1] * len(selected_products)  # Assuming quantity 1 for each product
 
         pdf = generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category)
         pdf_file = f"invoice_{customer_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
