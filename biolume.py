@@ -5,9 +5,9 @@ from fpdf import FPDF
 from datetime import datetime
 
 # Load data
-Products = pd.read_csv('/content/Invoice - Products.csv')
-Outlet = pd.read_csv('/content/Invoice - Outlet.csv')
-Person = pd.read_csv('/content/Invoice - Person.csv')
+Products = pd.read_csv('Invoice - Products.csv')
+Outlet = pd.read_csv('Invoice - Outlet.csv')
+Person = pd.read_csv('Invoice - Person.csv')
 
 # Company Details
 company_name = "ALLGEN TRADING INTERNATIONAL (OPC) PVT LTD"
