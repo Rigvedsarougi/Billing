@@ -43,7 +43,7 @@ class PDF(FPDF):
         self.set_font('Arial', 'B', 14)
         self.cell(0, 10, 'Proforma Invoice', ln=True, align='C')
         self.line(10, 50, 200, 50)  # Horizontal line
-        self.ln(2)
+        self.ln(1)
 
 '''    def footer(self):
         # Footer with bank details and page number
