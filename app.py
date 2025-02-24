@@ -80,7 +80,7 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     pdf.set_fill_color(200, 220, 255)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(10, 10, "S.No", border=1, align='C', fill=True)
-    pdf.cell(70, 10, "Description of Goods", border=1, align='C', fill=True)
+    pdf.cell(70, 10, "Product Name", border=1, align='C', fill=True)
     pdf.cell(20, 10, "HSN/SAC", border=1, align='C', fill=True)
     pdf.cell(20, 10, "GST Rate", border=1, align='C', fill=True)
     pdf.cell(20, 10, "Qty", border=1, align='C', fill=True)
