@@ -38,22 +38,21 @@ class PDF(FPDF):
         self.line(10, 50, 200, 50)
         self.ln(5)
 
-'''    def footer(self):
+    def footer(self):
         if photo_logo:
             self.image(photo_logo, 10, 265, 33)
         self.set_y(-40)
         self.set_font('Arial', 'I', 8)
         self.multi_cell(0, 5, bank_details, align='R')
-        self.cell(0, 10, f'Page {self.page_no()}', align='C')'''
+        self.cell(0, 10, f'Page {self.page_no()}', align='C')
 
 # Generate Invoice
-def generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category, sales_person):
+def generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category, employee_name):
     pdf = PDF()
     pdf.alias_nb_pages()
     pdf.add_page()
     current_date = datetime.now().strftime("%d-%m-%Y")
 
-    # Customer Details
     pdf.set_font("Arial", '', 10)
     pdf.cell(100, 10, f"Party: {customer_name}")
     pdf.cell(90, 10, f"Date: {current_date}", ln=True, align='R')
@@ -63,14 +62,13 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     pdf.cell(100, 10, "Address: ", ln=True)
     pdf.set_font("Arial", '', 9)
     pdf.multi_cell(0, 10, address)
+    
+    # **NEW: Display Sales Person**
     pdf.ln(5)
-
-    # **Sales Person**
     pdf.set_font("Arial", 'B', 10)
-    pdf.cell(100, 10, f"Sales Person: {sales_person}", ln=True)
+    pdf.cell(0, 10, f"Sales Person: {employee_name}", ln=True, align='L')
     pdf.ln(5)
 
-    # Invoice Table Headers
     pdf.set_fill_color(200, 220, 255)
     pdf.set_font("Arial", 'B', 9)
     pdf.cell(10, 8, "S.No", border=1, align='C', fill=True)
@@ -82,12 +80,16 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     pdf.cell(20, 8, "Amount", border=1, align='C', fill=True)
     pdf.ln()
 
-    # **Products List**
     pdf.set_font("Arial", '', 9)
     total_price = 0
     for idx, (product, quantity) in enumerate(zip(selected_products, quantities)):
         product_data = Products[Products['Product Name'] == product].iloc[0]
-        unit_price = float(product_data.get(discount_category, product_data['Price']))
+
+        if discount_category in product_data:
+            unit_price = float(product_data[discount_category])  # Use discount category price
+        else:
+            unit_price = float(product_data['Price'])
+
         item_total_price = unit_price * quantity
 
         pdf.cell(10, 8, str(idx + 1), border=1)
@@ -100,7 +102,6 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
         total_price += item_total_price
         pdf.ln()
 
-    # **Tax & Grand Total**
     pdf.ln(5)
     tax_rate = 0.18
     tax_amount = total_price * tax_rate
@@ -158,7 +159,7 @@ if st.button("Generate Invoice"):
         contact_number = outlet_details['Contact']
         address = outlet_details['Address']
 
-        pdf = generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category)
+        pdf = generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category, selected_employee)
         pdf_file = f"invoice_{customer_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
         pdf.output(pdf_file)
         with open(pdf_file, "rb") as f:
