@@ -18,7 +18,7 @@ Uttar Pradesh 201301
 GSTIN/UIN: 09AALCB9426H1ZA
 State Name: Uttar Pradesh, Code: 09
 """
-company_logo = 'ALLGEN_TRADING_logo.png'  # Ensure the logo file is in the same directory
+company_logo = 'ALLGEN TRADING logo.png'  # Ensure the logo file is in the same directory
 bank_details = """
 Bank Name: Example Bank
 Account Number: 1234567890
