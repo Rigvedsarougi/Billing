@@ -38,13 +38,13 @@ class PDF(FPDF):
         self.line(10, 50, 200, 50)
         self.ln(5)
 
-    def footer(self):
+'''    def footer(self):
         if photo_logo:
             self.image(photo_logo, 10, 265, 33)
         self.set_y(-40)
         self.set_font('Arial', 'I', 8)
         self.multi_cell(0, 5, bank_details, align='R')
-        self.cell(0, 10, f'Page {self.page_no()}', align='C')
+        self.cell(0, 10, f'Page {self.page_no()}', align='C')'''
 
 # Generate Invoice
 def generate_invoice(customer_name, gst_number, contact_number, address, selected_products, quantities, discount_category, employee_name):
