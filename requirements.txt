@@ -2,4 +2,3 @@ streamlit
 pandas
 fpdf
 PyPDF2
-math
