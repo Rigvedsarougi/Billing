@@ -60,10 +60,10 @@ def generate_invoice(customer_name, gst_number, contact_number, address, selecte
     current_date = datetime.now().strftime("%d-%m-%Y")
 
     # Sales Person
-    pdf.ln(1)
+    pdf.ln(0)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(0, 10, f"Sales Person: {employee_name}", ln=True, align='L')
-    pdf.ln(1)
+    pdf.ln(0)
 
     # Customer details
     pdf.set_font("Arial", 'B', 12)
