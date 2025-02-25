@@ -3,7 +3,6 @@ import pandas as pd
 import pdfplumber
 import os
 
-# Function to extract data from invoice PDFs
 def extract_invoice_data(pdf_file):
     extracted_data = []
     
@@ -11,61 +10,37 @@ def extract_invoice_data(pdf_file):
         for page in pdf.pages:
             text = page.extract_text()
             if text:
-                lines = text.split("\n")
-                invoice_info = {
-                    "Customer Name": "",
-                    "GST Number": "",
-                    "Contact": "",
-                    "Address": "",
-                    "Total Amount": "",
-                    "Invoice Date": "",
-                    "Products": []
-                }
-                
-                address_flag = False
+                lines = text.split('\n')
                 for line in lines:
-                    line = line.strip()
-                    if "Name:" in line and not invoice_info["Customer Name"]:
-                        invoice_info["Customer Name"] = line.split("Name:")[-1].strip()
-                    elif "GSTIN/UN:" in line:
-                        invoice_info["GST Number"] = line.split("GSTIN/UN:")[-1].strip()
-                    elif "Contact:" in line:
-                        invoice_info["Contact"] = line.split("Contact:")[-1].strip()
-                    elif "Address:" in line:
-                        address_flag = True
-                        invoice_info["Address"] = line.split("Address:")[-1].strip()
-                    elif address_flag and line:
-                        invoice_info["Address"] += " " + line.strip()
-                    elif "Grand Total" in line:
-                        invoice_info["Total Amount"] = line.split("Grand Total")[-1].strip()
-                    elif "Date:" in line:
-                        invoice_info["Invoice Date"] = line.split("Date:")[-1].strip()
-                    elif any(char.isdigit() for char in line) and "INR" not in line and len(line.split()) > 2:
-                        invoice_info["Products"].append(line)
-                
-                extracted_data.append(invoice_info)
+                    parts = line.split()
+                    if len(parts) > 2 and parts[0].isdigit():  # Assuming product lines start with a serial number
+                        product_name = ' '.join(parts[1:-3])  # Extract product name
+                        quantity = int(parts[-3])
+                        rate = float(parts[-2])
+                        amount = float(parts[-1])
+                        extracted_data.append([product_name, quantity, rate, amount])
     
     return extracted_data
 
-# Streamlit UI
-st.title("Invoice Data Extractor")
+st.title("Invoice Data Extractor - Product Wise Sales")
 
 uploaded_files = st.file_uploader("Upload Invoice PDFs", type=["pdf"], accept_multiple_files=True)
 
 if uploaded_files:
     all_data = []
+    
     for uploaded_file in uploaded_files:
-        data = extract_invoice_data(uploaded_file)
-        all_data.extend(data)
+        extracted_data = extract_invoice_data(uploaded_file)
+        all_data.extend(extracted_data)
     
-    df = pd.DataFrame(all_data)
+    df = pd.DataFrame(all_data, columns=["Product Name", "Quantity", "Rate", "Total Amount"])
+    product_sales = df.groupby("Product Name").sum().reset_index()
     
-    # Ensure 'Products' column is properly formatted
-    df["Products"] = df["Products"].apply(lambda x: ", ".join(x) if isinstance(x, list) else x)
+    st.write("### Product-wise Sales Collection")
+    st.dataframe(product_sales)
     
-    st.write("Extracted Data:", df)
+    csv_file = "product_sales_summary.csv"
+    product_sales.to_csv(csv_file, index=False)
     
-    csv_file = "extracted_invoice_data.csv"
-    df.to_csv(csv_file, index=False)
     with open(csv_file, "rb") as f:
         st.download_button("Download CSV", f, file_name=csv_file)
