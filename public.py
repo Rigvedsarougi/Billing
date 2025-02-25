@@ -25,47 +25,69 @@ def extract_invoice_data(pdf_path, file_name):
 
     # Extract relevant data from the text
     lines = text.split("\n")
-    data = {"File Name": file_name}  # Add file name to data
-    invoice_date = None
+    data = {
+        "File Name": file_name,
+        "Shop Name": "",
+        "Invoice Date": "",
+        "Address": "",
+        "Contact": "",
+        "State": "",
+        "City": "",
+        "GST": "",
+        "Employee Name": "",
+        "Discount Category": "",
+        "Employee Code": "",
+        "Designation": "",
+        "Products": []
+    }
 
     for i, line in enumerate(lines):
         if "Bill To:" in line:
             data["Shop Name"] = lines[i + 1].replace("Name: ", "").strip()
         if "Date:" in line:
-            invoice_date = line.replace("Date:", "").strip()  # Extract date separately
+            data["Invoice Date"] = line.replace("Date: ", "").strip()
         if "GSTIN/UN:" in line:
-            data["GST"] = line.replace("GSTIN/UN:", "").strip()
+            data["GST"] = line.replace("GSTIN/UN: ", "").strip()
         if "Contact:" in line:
-            data["Contact"] = line.replace("Contact:", "").strip()
+            data["Contact"] = line.replace("Contact: ", "").strip()
+        if "Address:" in line:
+            data["Address"] = lines[i + 1].strip()
         if "Sales Person:" in line:
-            data["Employee Name"] = line.replace("Sales Person:", "").strip()
+            data["Employee Name"] = line.replace("Sales Person: ", "").strip()
         if "Product Name" in line:
             product_start_index = i + 1
             break
 
-    # Ensure only the invoice date is stored correctly
-    data["Invoice Date"] = invoice_date  
+    # Fetch City & State from "Outlet" based on Shop Name
+    outlet_match = Outlet[Outlet['Shop Name'].str.strip().str.lower() == data["Shop Name"].strip().lower()]
+    if not outlet_match.empty:
+        data["State"] = outlet_match.iloc[0]["State"]
+        data["City"] = outlet_match.iloc[0]["City"]
+    
+    # Fetch Employee details from "Person" based on Employee Name
+    person_match = Person[Person['Employee Name'].str.strip().str.lower() == data["Employee Name"].strip().lower()]
+    if not person_match.empty:
+        data["Discount Category"] = person_match.iloc[0]["Discount Category"]
+        data["Employee Code"] = person_match.iloc[0]["Employee Code"]
+        data["Designation"] = person_match.iloc[0]["Designation"]
 
     # Extract product details
-    products = []
     for line in lines[product_start_index:]:
         if "Subtotal" in line:
             break
-        if line.strip():
-            parts = line.split()
-            if len(parts) >= 6:
-                product_name = " ".join(parts[1:-4])
-                quantity = int(parts[-3])
-                rate = float(parts[-2])
-                amount = float(parts[-1])
-                products.append({
-                    "Product Name": product_name,
-                    "Quantity": quantity,
-                    "Rate": rate,
-                    "Amount": amount
-                })
+        parts = line.split()
+        if len(parts) >= 6:
+            product_name = " ".join(parts[1:-4])
+            quantity = int(parts[-3])
+            rate = float(parts[-2])
+            amount = float(parts[-1])
+            data["Products"].append({
+                "Product Name": product_name,
+                "Quantity": quantity,
+                "Rate": rate,
+                "Amount": amount
+            })
 
-    data["Products"] = products
     return data
 
 # Process uploaded files
