@@ -97,13 +97,15 @@ if uploaded_files:
         file_name = invoice_data.get("File Name", "N/A")
 
         # Fetch City & State from "Outlet" sheet
-        outlet_match = Outlet[Outlet['Shop Name'] == shop_name]
+
+        # Fetch City & State from "Outlet" sheet
+        outlet_match = Outlet[Outlet['Shop Name'].str.strip().str.lower() == shop_name.strip().lower()]
+        
         if not outlet_match.empty:
             state = outlet_match.iloc[0]["State"]
             city = outlet_match.iloc[0]["City"]
         else:
             state, city = "N/A", "N/A"
-
         # Fetch Employee details from "Person" sheet
         person_match = Person[Person['Employee Name'] == employee_name]
         if not person_match.empty:
