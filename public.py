@@ -16,7 +16,7 @@ st.title("Invoice Data Extraction System")
 uploaded_files = st.file_uploader("Upload Invoice PDFs", type="pdf", accept_multiple_files=True)
 
 # Function to extract data from a single PDF
-def extract_invoice_data(pdf_path):
+def extract_invoice_data(pdf_path, file_name):
     with open(pdf_path, "rb") as file:
         reader = PyPDF2.PdfReader(file)
         text = ""
@@ -25,25 +25,30 @@ def extract_invoice_data(pdf_path):
 
     # Extract relevant data from the text
     lines = text.split("\n")
-    data = {}
+    data = {"File Name": file_name}  # Store file name
     product_start_index = None  # To track where products start
 
     for i, line in enumerate(lines):
         if "Bill To:" in line:
             data["Shop Name"] = lines[i + 1].replace("Name: ", "").strip() if i + 1 < len(lines) else "N/A"
         if "GSTIN/UN:" in line:
-            data["GST"] = line.replace("GSTIN/UN: ", "").strip()
+            data["GST"] = line.replace("GSTIN/UN:", "").strip()
         if "Contact:" in line:
-            data["Contact"] = line.replace("Contact: ", "").strip()
+            data["Contact"] = line.replace("Contact:", "").strip()
         if "Sales Person:" in line:
-            data["Employee Name"] = line.replace("Sales Person: ", "").strip()
+            data["Employee Name"] = line.replace("Sales Person:", "").strip()
         if "Address:" in line:
             data["Address"] = lines[i + 1].strip() if i + 1 < len(lines) else "N/A"
         if "Date:" in line:
             data["Invoice Date"] = line.replace("Date:", "").strip()
+
         if "Product Name" in line:
             product_start_index = i + 1
             break  # Stop once product section is found
+
+    # Default to today's date if missing
+    if "Invoice Date" not in data or not data["Invoice Date"]:
+        data["Invoice Date"] = datetime.today().strftime("%Y-%m-%d")
 
     # Extract product details
     products = []
@@ -82,45 +87,54 @@ if uploaded_files:
             f.write(uploaded_file.getbuffer())
 
         # Extract data from the PDF
-        invoice_data = extract_invoice_data(file_path)
+        invoice_data = extract_invoice_data(file_path, file_name=uploaded_file.name)
         shop_name = invoice_data.get("Shop Name", "N/A")
         gst = invoice_data.get("GST", "N/A")
         contact = invoice_data.get("Contact", "N/A")
         employee_name = invoice_data.get("Employee Name", "N/A")
         address = invoice_data.get("Address", "N/A")
-        invoice_date = invoice_data.get("Invoice Date", datetime.today().strftime("%Y-%m-%d"))  # Default to today's date if missing
+        invoice_date = invoice_data.get("Invoice Date", datetime.today().strftime("%Y-%m-%d"))
+        file_name = invoice_data.get("File Name", "N/A")
 
-        # Fetch additional details from Outlet and Person
+        # Fetch City & State from "Outlet" sheet
         outlet_match = Outlet[Outlet['Shop Name'] == shop_name]
-        person_match = Person[Person['Employee Name'] == employee_name]
+        if not outlet_match.empty:
+            state = outlet_match.iloc[0]["State"]
+            city = outlet_match.iloc[0]["City"]
+        else:
+            state, city = "N/A", "N/A"
 
-        # Handle missing records safely
-        outlet_details = outlet_match.iloc[0] if not outlet_match.empty else {
-            "State": "N/A", "City": "N/A"
-        }
-        
-        person_details = person_match.iloc[0] if not person_match.empty else {
-            "Discount Category": "N/A", "Employee Code": "N/A", "Designation": "N/A"
-        }
+        # Fetch Employee details from "Person" sheet
+        person_match = Person[Person['Employee Name'] == employee_name]
+        if not person_match.empty:
+            discount_category = person_match.iloc[0]["Discount Category"]
+            employee_code = person_match.iloc[0]["Employee Code"]
+            designation = person_match.iloc[0]["Designation"]
+        else:
+            discount_category, employee_code, designation = "N/A", "N/A", "N/A"
 
         # Process each product in the invoice
         for product in invoice_data["Products"]:
             product_match = Products[Products['Product Name'] == product["Product Name"]]
-            product_details = product_match.iloc[0] if not product_match.empty else {"Product ID": "N/A"}
+            if not product_match.empty:
+                product_id = product_match.iloc[0]["Product ID"]
+            else:
+                product_id = "N/A"
 
             all_data.append({
+                "File Name": file_name,
                 "Invoice Date": invoice_date,
                 "Shop Name": shop_name,
                 "Address": address,
                 "Contact": contact,
-                "State": outlet_details["State"],
-                "City": outlet_details["City"],
+                "State": state,
+                "City": city,
                 "GST": gst,
                 "Employee Name": employee_name,
-                "Discount Category": person_details["Discount Category"],
-                "Employee Code": person_details["Employee Code"],
-                "Designation": person_details["Designation"],
-                "Product ID": product_details.get("Product ID", "N/A"),
+                "Discount Category": discount_category,
+                "Employee Code": employee_code,
+                "Designation": designation,
+                "Product ID": product_id,
                 "Product Name": product["Product Name"],
                 "Quantity": product["Quantity"],
                 "Rate": product["Rate"],
